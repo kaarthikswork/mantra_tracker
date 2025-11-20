@@ -1,1 +1,15 @@
-
+{% extends "base.html" %}
+{% block content %}
+<h2>Add New Mantra</h2>
+<form method="post">
+    <div class="mb-3">
+        <label>Name of Mantra</label>
+        <input type="text" name="name" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label>No of Syllables</label>
+        <input type="number" name="syllables" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary" style="background-color: #FF9933;">Create</button>
+</form>
+{% endblock %}
