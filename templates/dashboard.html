@@ -1,1 +1,25 @@
-
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between">
+    <h2>Your Mantras</h2>
+    <div class="text-end">
+        <h5>Current Status: <span id="current-status">{{ mantras[0].current_status if mantras else 0 }}</span></h5>
+    </div>
+</div>
+<a href="{{ url_for('main.add_mantra') }}" class="btn btn-primary mb-3" style="background-color: #FF9933;">Add New Mantra</a>
+{% for mantra in mantras %}
+<div class="card mb-3" style="border-color: #FF9933;">
+    <div class="card-body">
+        <h5>{{ mantra.name }}</h5>
+        <p>Syllables: {{ mantra.syllables }}</p>
+        <p>Purascharana Count: {{ mantra.purascharana_count }}</p>
+        <p>Current Status: {{ mantra.current_status }}</p>
+        <form method="post" action="{{ url_for('main.add_entry', mantra_id=mantra._id) }}">
+            <input type="date" name="date" required>
+            <input type="number" name="count" placeholder="Chanting Count" required>
+            <button type="submit" class="btn btn-success">Add Entry</button>
+        </form>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
