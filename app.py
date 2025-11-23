@@ -2,7 +2,6 @@ from flask import Flask
 from flask_login import LoginManager
 from auth import auth
 from routes import main
-from models import db  # Ensures Firebase init
 import os
 
 app = Flask(__name__)
@@ -14,7 +13,8 @@ login_manager.login_view = 'auth.login'
 
 @login_manager.user_loader
 def load_user(username):
-    return User.find_by_username(username)  # Now returns a User instance
+    from models import User  # Import here to avoid circular import
+    return User.find_by_username(username)
 
 app.register_blueprint(auth)
 app.register_blueprint(main)
