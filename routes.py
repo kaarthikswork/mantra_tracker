@@ -8,7 +8,7 @@ main = Blueprint('main', __name__)
 @main.route('/')
 @login_required
 def dashboard():
-    mantras = Mantra.find_by_user(current_user.username)
+    mantras = Mantra.find_by_user(current_user.id)  # Use current_user.id (username)
     return render_template('dashboard.html', mantras=mantras)
 
 @main.route('/add_mantra', methods=['GET', 'POST'])
@@ -17,7 +17,7 @@ def add_mantra():
     if request.method == 'POST':
         name = request.form['name']
         syllables = int(request.form['syllables'])
-        mantra = Mantra(current_user.username, name, syllables)
+        mantra = Mantra(current_user.id, name, syllables)  # Use current_user.id
         mantra.save()
         return redirect(url_for('main.dashboard'))
     return render_template('add_mantra.html')
@@ -25,11 +25,11 @@ def add_mantra():
 @main.route('/add_entry/<mantra_id>', methods=['POST'])
 @login_required
 def add_entry(mantra_id):
-    mantra = Mantra.find_by_id(mantra_id)
-    if mantra and mantra['user_id'] == current_user.username:
+    mantra_data = Mantra.find_by_id(int(mantra_id))  # Convert to int for Supabase
+    if mantra_data and mantra_data['user_id'] == current_user.id:
         date = request.form['date']
         count = int(request.form['count'])
-        mantra_obj = Mantra(mantra['user_id'], mantra['name'], mantra['syllables'])
-        mantra_obj._id = mantra['_id']
-        mantra_obj.add_entry(date, count)
+        mantra = Mantra(mantra_data['user_id'], mantra_data['name'], mantra_data['syllables'])
+        mantra.id = mantra_data['id']  # Set ID from data
+        mantra.add_entry(date, count)
     return redirect(url_for('main.dashboard'))
