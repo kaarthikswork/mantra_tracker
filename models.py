@@ -1,12 +1,17 @@
-from supabase import create_client, Client
+from supabase import create_client
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 import os
 
-# Supabase setup
+# Supabase setup with error handling
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_KEY = os.environ.get('SUPABASE_ANON_KEY')
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+try:
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    print("Supabase client initialized successfully.")
+except Exception as e:
+    print(f"Supabase initialization failed: {e}")
+    supabase = None  # Prevent crashes
 
 # User model
 class User(UserMixin):
@@ -17,6 +22,8 @@ class User(UserMixin):
 
     @staticmethod
     def find_by_username(username):
+        if supabase is None:
+            return None
         try:
             response = supabase.table('users').select('*').eq('username', username).execute()
             data = response.data
@@ -29,6 +36,8 @@ class User(UserMixin):
             return None
 
     def save(self):
+        if supabase is None:
+            raise Exception("Supabase not initialized")
         try:
             supabase.table('users').insert({
                 'username': self.username,
@@ -53,6 +62,8 @@ class Mantra:
         self.id = None  # Will be set after save
 
     def save(self):
+        if supabase is None:
+            raise Exception("Supabase not initialized")
         try:
             response = supabase.table('mantras').insert({
                 'user_id': self.user_id,
@@ -69,6 +80,8 @@ class Mantra:
 
     @staticmethod
     def find_by_user(user_id):
+        if supabase is None:
+            return []
         try:
             response = supabase.table('mantras').select('*').eq('user_id', user_id).execute()
             return response.data
@@ -78,6 +91,8 @@ class Mantra:
 
     @staticmethod
     def find_by_id(mantra_id):
+        if supabase is None:
+            return None
         try:
             response = supabase.table('mantras').select('*').eq('id', mantra_id).execute()
             return response.data[0] if response.data else None
@@ -86,6 +101,8 @@ class Mantra:
             return None
 
     def add_entry(self, date, count):
+        if supabase is None:
+            raise Exception("Supabase not initialized")
         try:
             supabase.table('entries').insert({
                 'mantra_id': self.id,
