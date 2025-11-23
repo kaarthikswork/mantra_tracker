@@ -1,70 +1,56 @@
-import firebase_admin
-from firebase_admin import credentials, firestore
-import os
+from supabase import create_client, Client
+from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, relationship
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
-from flask_login import UserMixin  # Added for Flask-Login
+from flask_login import UserMixin
+import os
 
-# Initialize Firebase (with error handling)
-try:
-    cred = credentials.Certificate({
-        "type": "service_account",
-        "project_id": os.environ.get('FIREBASE_PROJECT_ID'),
-        "private_key_id": os.environ.get('FIREBASE_PRIVATE_KEY_ID'),
-        "private_key": os.environ.get('FIREBASE_PRIVATE_KEY').replace('\\n', '\n'),
-        "client_email": os.environ.get('FIREBASE_CLIENT_EMAIL'),
-        "client_id": os.environ.get('FIREBASE_CLIENT_ID'),
-        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-        "token_uri": "https://oauth2.googleapis.com/token",
-        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-        "client_x509_cert_url": os.environ.get('FIREBASE_CLIENT_X509_CERT_URL')
-    })
-    firebase_admin.initialize_app(cred)
-    db = firestore.client()
-    print("Firebase initialized successfully.")  # Debug log
-except Exception as e:
-    print(f"Firebase initialization failed: {e}")
-    db = None  # Prevent crashes
+# Supabase setup
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_KEY = os.environ.get('SUPABASE_ANON_KEY')
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# User model (now inherits from UserMixin for Flask-Login)
-class User(UserMixin):
-    def __init__(self, username, password_hash=None):
+# SQLAlchemy setup (for local ORM if needed, but we'll use Supabase directly for simplicity)
+Base = declarative_base()
+
+class User(Base, UserMixin):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String, unique=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+
+    def __init__(self, username, password):
         self.username = username
-        self.password_hash = password_hash
-        self.id = username  # Flask-Login uses 'id' for user identification
+        self.password_hash = generate_password_hash(password)
 
     @staticmethod
     def find_by_username(username):
-        if db is None:
-            return None
-        try:
-            doc = db.collection('users').document(username).get()
-            if doc.exists:
-                data = doc.to_dict()
-                return User(data['username'], data['password_hash'])
-            return None
-        except Exception as e:
-            print(f"Error finding user: {e}")
-            return None
+        response = supabase.table('users').select('*').eq('username', username).execute()
+        data = response.data
+        if data:
+            user_data = data[0]
+            return User(user_data['username'], '')  # Password hash loaded separately
+        return None
 
     def save(self):
-        if db is None:
-            raise Exception("Database not initialized")
-        try:
-            db.collection('users').document(self.username).set({
-                'username': self.username,
-                'password_hash': self.password_hash
-            })
-            print(f"User {self.username} saved successfully.")  # Debug log
-        except Exception as e:
-            print(f"Error saving user: {e}")
-            raise
+        supabase.table('users').insert({
+            'username': self.username,
+            'password_hash': self.password_hash
+        }).execute()
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-# Mantra model (unchanged, but added error handling)
-class Mantra:
+class Mantra(Base):
+    __tablename__ = 'mantras'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    name = Column(String, nullable=False)
+    syllables = Column(Integer, nullable=False)
+    purascharana_count = Column(Integer, nullable=False)
+    current_status = Column(Integer, default=0)
+
     def __init__(self, user_id, name, syllables):
         self.user_id = user_id
         self.name = name
@@ -73,60 +59,34 @@ class Mantra:
         self.current_status = 0
 
     def save(self):
-        if db is None:
-            raise Exception("Database not initialized")
-        try:
-            doc_ref = db.collection('mantras').document()
-            self._id = doc_ref.id
-            doc_ref.set({
-                'id': self._id,
-                'user_id': self.user_id,
-                'name': self.name,
-                'syllables': self.syllables,
-                'purascharana_count': self.purascharana_count,
-                'current_status': self.current_status
-            })
-            print(f"Mantra {self.name} saved successfully.")  # Debug log
-        except Exception as e:
-            print(f"Error saving mantra: {e}")
-            raise
+        response = supabase.table('mantras').insert({
+            'user_id': self.user_id,
+            'name': self.name,
+            'syllables': self.syllables,
+            'purascharana_count': self.purascharana_count,
+            'current_status': self.current_status
+        }).execute()
+        self.id = response.data[0]['id']  # Get inserted ID
 
     @staticmethod
     def find_by_user(user_id):
-        if db is None:
-            return []
-        try:
-            docs = db.collection('mantras').where('user_id', '==', user_id).stream()
-            return [doc.to_dict() for doc in docs]
-        except Exception as e:
-            print(f"Error finding mantras: {e}")
-            return []
+        response = supabase.table('mantras').select('*').eq('user_id', user_id).execute()
+        return response.data
 
     @staticmethod
     def find_by_id(mantra_id):
-        if db is None:
-            return None
-        try:
-            doc = db.collection('mantras').document(mantra_id).get()
-            return doc.to_dict() if doc.exists else None
-        except Exception as e:
-            print(f"Error finding mantra: {e}")
-            return None
+        response = supabase.table('mantras').select('*').eq('id', mantra_id).execute()
+        return response.data[0] if response.data else None
 
     def add_entry(self, date, count):
-        if db is None:
-            raise Exception("Database not initialized")
-        try:
-            db.collection('entries').add({
-                'mantra_id': str(self._id),
-                'date': date,
-                'count': count
-            })
-            # Update current status
-            entries = db.collection('entries').where('mantra_id', '==', str(self._id)).stream()
-            total = sum(entry.to_dict()['count'] for entry in entries)
-            db.collection('mantras').document(self._id).update({'current_status': total})
-            print(f"Entry added for mantra {self._id}.")  # Debug log
-        except Exception as e:
-            print(f"Error adding entry: {e}")
-            raise
+        supabase.table('entries').insert({
+            'mantra_id': self.id,
+            'date': date,
+            'count': count
+        }).execute()
+        # Update current status
+        response = supabase.table('entries').select('count').eq('mantra_id', self.id).execute()
+        total = sum(entry['count'] for entry in response.data)
+        supabase.table('mantras').update({'current_status': total}).eq('id', self.id).execute()
+
+# Entries table (no class needed, handled in add_entry)
