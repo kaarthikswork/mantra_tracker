@@ -30,12 +30,12 @@ def register():
             return redirect(url_for('auth.register'))
         try:
             user = User(username)
-            user.password_hash = user.generate_password_hash(password)  # Wait, fix: Use generate_password_hash directly
+            user.password_hash = generate_password_hash(password)  # Corrected: Use function directly
             user.save()
             login_user(user)
             return redirect(url_for('main.dashboard'))
         except Exception as e:
-            print(f"Registration error: {e}")  # Logs to Render console
+            print(f"Registration error: {e}")
             flash('Registration failed. Check logs.')
             return redirect(url_for('auth.register'))
     return render_template('register.html')
