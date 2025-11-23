@@ -11,14 +11,14 @@ try:
     print("Supabase client initialized successfully.")
 except Exception as e:
     print(f"Supabase initialization failed: {e}")
-    supabase = None  # Prevent crashes
+    supabase = None
 
 # User model
 class User(UserMixin):
-    def __init__(self, username, password_hash=None):
+    def __init__(self, username, password_hash=None, user_id=None):
         self.username = username
         self.password_hash = password_hash
-        self.id = username  # Flask-Login uses 'id' for identification
+        self.id = user_id  # Now stores the integer ID from Supabase
 
     @staticmethod
     def find_by_username(username):
@@ -29,7 +29,7 @@ class User(UserMixin):
             data = response.data
             if data:
                 user_data = data[0]
-                return User(user_data['username'], user_data['password_hash'])
+                return User(user_data['username'], user_data['password_hash'], user_data['id'])
             return None
         except Exception as e:
             print(f"Error finding user: {e}")
@@ -39,11 +39,12 @@ class User(UserMixin):
         if supabase is None:
             raise Exception("Supabase not initialized")
         try:
-            supabase.table('users').insert({
+            response = supabase.table('users').insert({
                 'username': self.username,
                 'password_hash': self.password_hash
             }).execute()
-            print(f"User {self.username} saved successfully.")
+            self.id = response.data[0]['id']  # Set the integer ID after insertion
+            print(f"User {self.username} saved successfully with ID {self.id}.")
         except Exception as e:
             print(f"Error saving user: {e}")
             raise
@@ -54,12 +55,12 @@ class User(UserMixin):
 # Mantra model
 class Mantra:
     def __init__(self, user_id, name, syllables):
-        self.user_id = user_id
+        self.user_id = user_id  # Now expects integer
         self.name = name
         self.syllables = syllables
         self.purascharana_count = syllables * 100000
         self.current_status = 0
-        self.id = None  # Will be set after save
+        self.id = None
 
     def save(self):
         if supabase is None:
@@ -72,7 +73,7 @@ class Mantra:
                 'purascharana_count': self.purascharana_count,
                 'current_status': self.current_status
             }).execute()
-            self.id = response.data[0]['id']  # Get the inserted ID
+            self.id = response.data[0]['id']
             print(f"Mantra {self.name} saved successfully.")
         except Exception as e:
             print(f"Error saving mantra: {e}")
