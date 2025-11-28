@@ -1,17 +1,42 @@
 from supabase import create_client
+from flask_login import UserMixin
 import os
 
-# Supabase setup
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_KEY = os.environ.get('SUPABASE_ANON_KEY')
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+class User(UserMixin):
+    def __init__(self, id, email):
+        self.id = id
+        self.email = email
+
+    @staticmethod
+    def register(email, password):
+        response = supabase.auth.sign_up({'email': email, 'password': password})
+        if response.user:
+            return User(response.user.id, email)
+        raise Exception('Registration failed')
+
+    @staticmethod
+    def login(email, password):
+        response = supabase.auth.sign_in_with_password({'email': email, 'password': password})
+        if response.user:
+            return User(response.user.id, email)
+        return None
+
+    @staticmethod
+    def get_by_id(user_id):
+        # Supabase auth doesn't store users in tables, so we assume ID is valid
+        return User(user_id, 'user@example.com')  # Placeholder; adjust if needed
+
 class Mantra:
-    def __init__(self, name, syllables, id=None):
+    def __init__(self, name, syllables, user_id, id=None):
         self.id = id
         self.name = name
         self.syllables = syllables
         self.purascharana_count = syllables * 100000
+        self.user_id = user_id
         self.entries = []
 
     def save(self):
@@ -20,7 +45,7 @@ class Mantra:
                 'name': self.name,
                 'syllables': self.syllables,
                 'purascharana_count': self.purascharana_count,
-                'current_status': 0
+                'user_id': self.user_id
             }).execute()
             self.id = response.data[0]['id']
         except Exception as e:
@@ -44,7 +69,7 @@ class Mantra:
     @staticmethod
     def delete(mantra_id):
         try:
-            supabase.table('entries').delete().eq('mantra_id', mantra_id).execute()  # Delete entries first
+            supabase.table('entries').delete().eq('mantra_id', mantra_id).execute()
             supabase.table('mantras').delete().eq('id', mantra_id).execute()
         except Exception as e:
             print(f"Error deleting mantra: {e}")
@@ -57,12 +82,12 @@ class Mantra:
             print(f"Error deleting entry: {e}")
 
     @staticmethod
-    def get_all():
+    def get_all_by_user(user_id):
         try:
-            response = supabase.table('mantras').select('*').execute()
+            response = supabase.table('mantras').select('*').eq('user_id', user_id).execute()
             mantras = []
             for data in response.data:
-                mantra = Mantra(data['name'], data['syllables'], data['id'])
+                mantra = Mantra(data['name'], data['syllables'], data['user_id'], data['id'])
                 mantra.entries = mantra.get_entries()
                 mantras.append(mantra)
             return mantras
@@ -76,7 +101,7 @@ class Mantra:
             response = supabase.table('mantras').select('*').eq('id', mantra_id).execute()
             if response.data:
                 data = response.data[0]
-                mantra = Mantra(data['name'], data['syllables'], data['id'])
+                mantra = Mantra(data['name'], data['syllables'], data['user_id'], data['id'])
                 mantra.entries = mantra.get_entries()
                 return mantra
             return None
@@ -102,12 +127,3 @@ class Mantra:
         except Exception as e:
             print(f"Error adding entry: {e}")
             raise
-
-def get_current_status():
-    try:
-        response = supabase.table('entries').select('count').execute()
-        total = sum(entry['count'] for entry in response.data)
-        return total
-    except Exception as e:
-        print(f"Error getting current status: {e}")
-        return 0
