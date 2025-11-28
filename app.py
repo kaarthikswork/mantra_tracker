@@ -2,7 +2,7 @@ from flask import Flask
 from routes import main
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key'  # Keep for sessions
+app.config['SECRET_KEY'] = 'your-secret-key'
 
 app.register_blueprint(main)
 
