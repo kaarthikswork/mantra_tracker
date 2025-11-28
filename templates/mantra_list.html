@@ -1,59 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>Mantra Records</h2>
-{% for mantra in mantras %}
-<div class="card mb-3" style="border-color: #FF9933;">
-    <div class="card-body">
-        <form method="post" action="{{ url_for('main.edit_mantra', mantra_id=mantra.id) }}" style="display: inline;">
-            <div class="mb-2">
-                <label>Name:</label>
-                <input type="text" name="name" value="{{ mantra.name }}" class="form-control" required>
+<div class="row">
+    {% for mantra in mantras %}
+    <div class="col-md-4 mb-3">
+        <div class="card" style="border-color: #FF9933; cursor: pointer;" onclick="window.location='{{ url_for('main.mantra_detail', mantra_id=mantra.id) }}'">
+            <div class="card-body text-center">
+                <h5>{{ mantra.name }}</h5>
+                <p>Current Status: {{ mantra.entries | sum(attribute='count') }}</p>
             </div>
-            <div class="mb-2">
-                <label>Syllables:</label>
-                <input type="number" name="syllables" value="{{ mantra.syllables }}" class="form-control" required>
-            </div>
-            <button type="submit" class="btn btn-success btn-sm">Save</button>
-        </form>
-        <a href="{{ url_for('main.delete_mantra', mantra_id=mantra.id) }}" class="btn btn-danger btn-sm" onclick="return confirm('Delete this mantra?')">Delete Mantra</a>
-        <button class="btn btn-primary btn-sm" onclick="toggleAddEntry({{ mantra.id }})">Add Entry</button>
-        <div id="add-entry-{{ mantra.id }}" style="display: none; margin-top: 10px;">
-            <form method="post" action="{{ url_for('main.add_entry', mantra_id=mantra.id) }}">
-                <input type="date" name="date" required>
-                <input type="number" name="count" placeholder="Count" required>
-                <button type="submit" class="btn btn-success btn-sm">Add</button>
-            </form>
         </div>
-        <h6>Entries:</h6>
-        {% if mantra.entries %}
-        <table class="table table-sm">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Count</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for entry in mantra.entries %}
-                <tr>
-                    <td>{{ entry.date }}</td>
-                    <td>{{ entry.count }}</td>
-                    <td><a href="{{ url_for('main.delete_entry', entry_id=entry.id) }}" class="btn btn-danger btn-sm" onclick="return confirm('Delete this entry?')">Delete</a></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p>No entries.</p>
-        {% endif %}
     </div>
+    {% endfor %}
 </div>
-{% endfor %}
-<script>
-function toggleAddEntry(mantraId) {
-    var div = document.getElementById('add-entry-' + mantraId);
-    div.style.display = div.style.display === 'none' ? 'block' : 'none';
-}
-</script>
 {% endblock %}
