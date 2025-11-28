@@ -28,17 +28,31 @@ def add_entry(mantra_id):
         count = int(request.form['count'])
         mantra.add_entry(date, count)
         flash('Entry added successfully!')
-    return redirect(url_for('main.dashboard'))
+    return redirect(url_for('main.mantra_records'))
 
 @main.route('/mantra_records')
 def mantra_records():
     mantras = Mantra.get_all()
     return render_template('mantra_list.html', mantras=mantras)
 
-@main.route('/mantra_entries/<int:mantra_id>')
-def mantra_entries(mantra_id):
+@main.route('/edit_mantra/<int:mantra_id>', methods=['POST'])
+def edit_mantra(mantra_id):
     mantra = Mantra.get_by_id(mantra_id)
-    if not mantra:
-        flash('Mantra not found!')
-        return redirect(url_for('main.mantra_records'))
-    return render_template('mantra_entries.html', mantra=mantra)
+    if mantra:
+        name = request.form['name']
+        syllables = int(request.form['syllables'])
+        mantra.update(name, syllables)
+        flash('Mantra updated successfully!')
+    return redirect(url_for('main.mantra_records'))
+
+@main.route('/delete_mantra/<int:mantra_id>')
+def delete_mantra(mantra_id):
+    Mantra.delete(mantra_id)
+    flash('Mantra deleted successfully!')
+    return redirect(url_for('main.mantra_records'))
+
+@main.route('/delete_entry/<int:entry_id>')
+def delete_entry(entry_id):
+    Mantra.delete_entry(entry_id)
+    flash('Entry deleted successfully!')
+    return redirect(request.referrer or url_for('main.mantra_records'))
