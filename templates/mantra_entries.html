@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Entries for {{ mantra.name }}</h2>
+<p>Syllables: {{ mantra.syllables }} | Purascharana Count: {{ mantra.purascharana_count }}</p>
+{% if mantra.entries %}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Chanting Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in mantra.entries %}
+            <tr>
+                <td>{{ entry.date }}</td>
+                <td>{{ entry.count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>No entries yet. <a href="{{ url_for('main.dashboard') }}">Add an entry</a>.</p>
+{% endif %}
+<a href="{{ url_for('main.mantra_records') }}" class="btn btn-secondary">Back to Mantra Records</a>
+{% endblock %}
