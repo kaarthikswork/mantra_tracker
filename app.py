@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_login import LoginManager
-from routes import main, auth
+from routes import main
+from auth import auth  # Import auth from auth.py
 import os
 
 app = Flask(__name__)
