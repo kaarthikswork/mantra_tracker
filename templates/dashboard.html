@@ -2,22 +2,21 @@
 {% block content %}
 <div class="d-flex justify-content-between">
     <h2>Dashboard</h2>
-    <div class="text-end">
-        <h5>Current Status: {{ current_status }}</h5>
-    </div>
 </div>
 <a href="{{ url_for('main.add_mantra') }}" class="btn btn-primary mb-3" style="background-color: #FF9933;">Add a Mantra</a>
-{% for mantra in mantras %}
-<div class="card mb-3" style="border-color: #FF9933;">
-    <div class="card-body">
-        <h5>{{ mantra.name }}</h5>
-        <p>Syllables: {{ mantra.syllables }}</p>
-        <p>Purascharana Count: {{ mantra.purascharana_count }}</p>
-        {% set progress = (mantra.entries | sum(attribute='count') / mantra.purascharana_count * 100) if mantra.purascharana_count > 0 else 0 %}
-        <div class="progress mb-2">
-            <div class="progress-bar" role="progressbar" style="width: {{ progress }}%;" aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100">{{ "%.1f"|format(progress) }}%</div>
+<div class="row">
+    {% for mantra in mantras %}
+    <div class="col-md-4 mb-3">
+        <div class="card" style="border-color: #FF9933;">
+            <div class="card-body">
+                <h5>{{ mantra.name }}</h5>
+                <p>Syllables: {{ mantra.syllables }}</p>
+                <p>Purascharana Count: {{ mantra.purascharana_count }}</p>
+                {% set progress = (mantra.entries | sum(attribute='count') / mantra.purascharana_count * 100) if mantra.purascharana_count > 0 else 0 %}
+                <p>Progress: {{ "%.1f"|format(progress) }}%</p>
+            </div>
         </div>
     </div>
+    {% endfor %}
 </div>
-{% endfor %}
 {% endblock %}
