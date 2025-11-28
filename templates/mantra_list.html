@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Mantra Records</h2>
+{% if mantras %}
+    <div class="row">
+        {% for mantra in mantras %}
+        <div class="col-md-4 mb-3">
+            <div class="card" style="border-color: #FF9933;">
+                <div class="card-body">
+                    <h5>{{ mantra.name }}</h5>
+                    <p>Syllables: {{ mantra.syllables }}</p>
+                    <p>Purascharana Count: {{ mantra.purascharana_count }}</p>
+                    <p>Entries: {{ mantra.entries | length }}</p>
+                    <a href="{{ url_for('main.mantra_entries', mantra_id=mantra.id) }}" class="btn btn-primary" style="background-color: #FF9933;">View Entries</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <p>No mantras added yet. <a href="{{ url_for('main.add_mantra') }}">Add one</a>.</p>
+{% endif %}
+{% endblock %}
