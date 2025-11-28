@@ -9,7 +9,11 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        print(f"Login attempt for username: {username}")  # Debug
         user = User.find_by_username(username)
+        print(f"User found: {user is not None}")  # Debug
+        if user:
+            print(f"Password check: {user.check_password(password)}")  # Debug
         if user and user.check_password(password):
             login_user(user)
             return redirect(url_for('main.dashboard'))
@@ -22,6 +26,7 @@ def register():
         username = request.form['username']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
+        print(f"Attempting registration for {username}")  # Debug
         if password != confirm_password:
             flash('Passwords do not match')
             return redirect(url_for('auth.register'))
@@ -30,7 +35,8 @@ def register():
             return redirect(url_for('auth.register'))
         try:
             user = User(username)
-            user.password_hash = generate_password_hash(password)  # Corrected: Use function directly
+            user.password_hash = generate_password_hash(password)
+            print(f"Saving user {username} with hash {user.password_hash}")  # Debug
             user.save()
             login_user(user)
             return redirect(url_for('main.dashboard'))
