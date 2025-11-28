@@ -6,8 +6,7 @@ main = Blueprint('main', __name__)
 @main.route('/')
 def dashboard():
     mantras = Mantra.get_all()
-    current_status = get_current_status()
-    return render_template('dashboard.html', mantras=mantras, current_status=current_status)
+    return render_template('dashboard.html', mantras=mantras)
 
 @main.route('/add_mantra', methods=['GET', 'POST'])
 def add_mantra():
@@ -28,12 +27,20 @@ def add_entry(mantra_id):
         count = int(request.form['count'])
         mantra.add_entry(date, count)
         flash('Entry added successfully!')
-    return redirect(url_for('main.mantra_records'))
+    return redirect(url_for('main.mantra_detail', mantra_id=mantra_id))
 
 @main.route('/mantra_records')
 def mantra_records():
     mantras = Mantra.get_all()
     return render_template('mantra_list.html', mantras=mantras)
+
+@main.route('/mantra_detail/<int:mantra_id>')
+def mantra_detail(mantra_id):
+    mantra = Mantra.get_by_id(mantra_id)
+    if not mantra:
+        flash('Mantra not found!')
+        return redirect(url_for('main.mantra_records'))
+    return render_template('mantra_detail.html', mantra=mantra)
 
 @main.route('/edit_mantra/<int:mantra_id>', methods=['POST'])
 def edit_mantra(mantra_id):
@@ -43,7 +50,7 @@ def edit_mantra(mantra_id):
         syllables = int(request.form['syllables'])
         mantra.update(name, syllables)
         flash('Mantra updated successfully!')
-    return redirect(url_for('main.mantra_records'))
+    return redirect(url_for('main.mantra_detail', mantra_id=mantra_id))
 
 @main.route('/delete_mantra/<int:mantra_id>')
 def delete_mantra(mantra_id):
