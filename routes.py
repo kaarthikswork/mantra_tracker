@@ -5,8 +5,9 @@ from models import Mantra
 main = Blueprint('main', __name__)
 
 @main.route('/')
-@login_required
 def dashboard():
+    if not current_user.is_authenticated:
+        return render_template('landing.html')  # Show landing page for non-logged-in users
     mantras = Mantra.get_all_by_user(current_user.id)
     return render_template('dashboard.html', mantras=mantras)
 
