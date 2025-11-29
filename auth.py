@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
-from flask_login import login_user, logout_user, current_user
+from flask_login import login_user, logout_user, current_user, login_required  # Added login_required
 from models import User
 
 auth = Blueprint('auth', __name__)
@@ -38,7 +38,7 @@ def login():
     return render_template('login.html')
 
 @auth.route('/logout')
-@login_required
+@login_required  # This was missing the import
 def logout():
     logout_user()
     return redirect(url_for('auth.login'))
